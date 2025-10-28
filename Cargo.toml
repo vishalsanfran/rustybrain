@@ -1,0 +1,9 @@
+[package]
+name = "rustybrain"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight AI systems toolkit in Rust — focused on test-driven ML infrastructure."
+license = "MIT"
+
+[dev-dependencies]
+approx = "0.5" # for floating-point comparison in tests

@@ -1,0 +1,35 @@
+# === Rust build artifacts ===
+/target/
+
+# === Cargo package manager ===
+# Ignore Cargo.lock for libraries, include for binaries.
+# (For now, since rustybrain is a library, we ignore it)
+Cargo.lock
+
+# === IDE / Editor files ===
+.vscode/
+.idea/
+*.iml
+
+# === macOS specific ===
+.DS_Store
+
+# === Logs / temp files ===
+*.log
+*.tmp
+
+# === Test and coverage ===
+/coverage/
+/*.profraw
+/*.profdata
+
+# === Backup or generated files ===
+*.bak
+*.swp
+*.swo
+
+# === Binary outputs ===
+*.exe
+*.dll
+*.so
+*.dylib
