@@ -4,3 +4,6 @@
 //! stabilizes reward values in online-learning scenarios (e.g. bandits).
 
 pub mod reward_normalizer;
+pub mod bandit {
+    pub mod epsilon_greedy;
+}
