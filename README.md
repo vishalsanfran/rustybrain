@@ -49,5 +49,22 @@ curl -X POST http://127.0.0.1:8080/optimizer/<id>/observe \
 curl http://127.0.0.1:8080/optimizer/<id>/state
 ```
 
+## 🧩 Training Orchestrator API
+
+### Start a new training job (mock subprocess)
+curl -X POST http://127.0.0.1:8080/train/start \
+  -H "Content-Type: application/json" \
+  -d '{"cmd":"echo training..."}'
+
+### Send live metrics
+curl -X POST http://127.0.0.1:8080/train/metrics \
+  -H "Content-Type: application/json" \
+  -d '{"loss":0.3,"reward":0.7}'
+
+### Stop the training job
+curl -X POST http://127.0.0.1:8080/train/stop \
+  -H "Content-Type: application/json" \
+  -d '{"id":"<job-id>"}'
+
 ## Testing
 cargo test
