@@ -161,20 +161,20 @@ async fn get_stats(
     }
 }
 
-/// Build the Axum app (useful for tests and embedding).
-pub fn app() -> Router {
+/// Build the Axum router for bandit endpoints
+pub fn routes() -> Router {
     let reg = Registry::default();
     Router::new()
-        .route("/bandit", post(create_bandit))
-        .route("/bandit/:id/select", get(select_arm))
-        .route("/bandit/:id/update", post(update_reward))
-        .route("/bandit/:id/stats", get(get_stats))
+        .route("/", post(create_bandit))
+        .route("/:id/select", get(select_arm))
+        .route("/:id/update", post(update_reward))
+        .route("/:id/stats", get(get_stats))
         .with_state(reg)
 }
 
 /// Run the REST server on `addr` (e.g., "127.0.0.1:8080").
 pub async fn start_server(addr: &str) -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    axum::serve(listener, app()).await?;
+    axum::serve(listener, routes()).await?;
     Ok(())
 }
