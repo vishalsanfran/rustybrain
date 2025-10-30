@@ -10,3 +10,7 @@ pub mod bandit {
 pub mod service {
     pub mod rest_bandit;
 }
+
+pub mod metrics {
+    pub mod reward_tracker;
+}
