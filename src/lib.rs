@@ -7,3 +7,6 @@ pub mod reward_normalizer;
 pub mod bandit {
     pub mod epsilon_greedy;
 }
+pub mod service {
+    pub mod rest_bandit;
+}
