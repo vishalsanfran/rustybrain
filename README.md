@@ -22,5 +22,8 @@ curl -X POST http://127.0.0.1:8080/bandit/<id>/update \
   -H "Content-Type: application/json" \
   -d '{"arm":1,"reward":0.9}'
 
+### 4️⃣ Get rolling reward stats
+curl http://127.0.0.1:8080/bandit/<id>/stats
+
 ## Testing
 cargo test
