@@ -4,13 +4,15 @@
 //! stabilizes reward values in online-learning scenarios (e.g. bandits).
 
 pub mod reward_normalizer;
-pub mod bandit {
-    pub mod epsilon_greedy;
-}
 pub mod service {
     pub mod rest_bandit;
 }
 
 pub mod metrics {
     pub mod reward_tracker;
+}
+
+pub mod bandit {
+    pub mod epsilon_greedy;
+    pub mod ucb1;
 }

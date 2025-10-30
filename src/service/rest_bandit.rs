@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::bandit::epsilon_greedy::EpsilonGreedy;
+use crate::bandit::ucb1::Ucb1;
 use crate::metrics::reward_tracker::RewardTracker;
 
 #[derive(Clone)]
@@ -29,6 +30,7 @@ struct EpsilonGreedyTracked {
 #[derive(Clone)]
 enum Strategy {
     EpsilonGreedy(EpsilonGreedyTracked),
+    Ucb1(Ucb1),
 }
 
 #[derive(Clone, Default)]
@@ -63,25 +65,36 @@ async fn create_bandit(
     State(reg): State<Registry>,
     Json(req): Json<CreateReq>,
 ) -> Result<Json<CreateResp>, (StatusCode, String)> {
-    if req.strategy != "epsilon_greedy" {
+    if !(req.strategy == "epsilon_greedy" || req.strategy == "ucb1") {
         return Err((StatusCode::BAD_REQUEST, "unsupported strategy".into()));
     }
-    if req.num_arms == 0 || !(0.0..=1.0).contains(&req.param) {
-        return Err((StatusCode::BAD_REQUEST, "invalid params".into()));
+    if req.num_arms == 0 {
+        return Err((StatusCode::BAD_REQUEST, "invalid number of arms".into()));
     }
 
     let id = Uuid::new_v4().to_string();
-    let tracked = EpsilonGreedyTracked {
-        bandit: EpsilonGreedy::new(req.num_arms, req.param),
-        tracker: RewardTracker::new(50),
+
+    let strategy = match req.strategy.as_str() {
+        "epsilon_greedy" => {
+            if !(0.0..=1.0).contains(&req.param) {
+                return Err((StatusCode::BAD_REQUEST, "invalid epsilon".into()));
+            }
+            let tracked = EpsilonGreedyTracked {
+                bandit: EpsilonGreedy::new(req.num_arms, req.param),
+                tracker: RewardTracker::new(50),
+            };
+            Strategy::EpsilonGreedy(tracked)
+        }
+        "ucb1" => {
+            if req.param < 0.0 {
+                return Err((StatusCode::BAD_REQUEST, "invalid exploration factor".into()));
+            }
+            Strategy::Ucb1(Ucb1::new(req.num_arms, req.param))
+        }
+        _ => unreachable!(),
     };
 
-    // ✅ Insert exactly once with the correct enum payload
-    reg.map
-        .lock()
-        .unwrap()
-        .insert(id.clone(), Strategy::EpsilonGreedy(tracked));
-
+    reg.map.lock().unwrap().insert(id.clone(), strategy);
     Ok(Json(CreateResp { id }))
 }
 
@@ -92,8 +105,8 @@ async fn select_arm(
     let mut map = reg.map.lock().unwrap();
     let entry = map.get_mut(&id).ok_or((StatusCode::NOT_FOUND, "unknown id".into()))?;
     let arm = match entry {
-        // ✅ Call through the inner bandit
         Strategy::EpsilonGreedy(t) => t.bandit.select_arm() as u32,
+        Strategy::Ucb1(b) => b.select_arm() as u32,
     };
     Ok(Json(SelectResp { arm }))
 }
@@ -106,11 +119,11 @@ async fn update_reward(
     let mut map = reg.map.lock().unwrap();
     let entry = map.get_mut(&id).ok_or((StatusCode::NOT_FOUND, "unknown id".into()))?;
     match entry {
-        // ✅ Update both bandit state and rolling tracker
         Strategy::EpsilonGreedy(t) => {
             t.bandit.update(req.arm as usize, req.reward);
             t.tracker.update(req.reward);
         }
+        Strategy::Ucb1(b) => b.update(req.arm as usize, req.reward),
     }
     Ok(())
 }
@@ -136,6 +149,15 @@ async fn get_stats(
             max: t.tracker.max(),
             count: t.tracker.count(),
         })),
+        Strategy::Ucb1(b) => {
+            let avg = b.values().iter().sum::<f64>() / b.values().len() as f64;
+            Ok(Json(StatsResp {
+                mean: avg,
+                min: b.values().iter().fold(f64::INFINITY, |a, &x| a.min(x)),
+                max: b.values().iter().fold(f64::NEG_INFINITY, |a, &x| a.max(x)),
+                count: b.counts().iter().sum::<u64>() as usize,
+            }))
+        }
     }
 }
 
